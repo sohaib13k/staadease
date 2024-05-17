@@ -1,12 +1,11 @@
-# views.py
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
-from django.http import HttpResponse
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from io import BytesIO
 from django.core.files.storage import FileSystemStorage
-import base64
 
 
 @login_required
@@ -270,4 +269,3 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     ax.set_yticks([])
 
     return fig, ax
-
