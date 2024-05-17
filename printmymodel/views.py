@@ -1,3 +1,4 @@
+import numpy as np
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -204,15 +205,23 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
 
     for member in members_and_nodes:
         member_no, bottom_joint, top_joint = member
-        x_values = [node_coordinates[bottom_joint][0], node_coordinates[top_joint][0]]
-        y_values = [node_coordinates[bottom_joint][1], node_coordinates[top_joint][1]]
-        ax.plot(x_values, y_values, "ko-", label=f"Member {member_no}")
+        x1, y1, z1 = node_coordinates[bottom_joint]
+        x2, y2, z2 = node_coordinates[top_joint]
+
+        # Calculate the length of the member
+        length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+
+        x_values = [x1, x2]
+        y_values = [y1, y2]
+        # ax.plot(x_values, y_values, "o-", label=f"Member {member_no}")
+        ax.plot(x_values, y_values, "o-", color="#a9a9a9", label=f"Member {member_no}")
 
         dimensions = member_dimension.get(int(member_no))
         if dimensions:
             dimension_label = format_dimension_label(dimensions)
             mid_x = (x_values[0] + x_values[1]) / 2
             mid_y = (y_values[0] + y_values[1]) / 2
+
             ax.text(
                 mid_x,
                 mid_y + 0.1,
@@ -221,7 +230,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 color="red",
                 ha="center",
                 va="center",
-            )  # Member number in white
+            )
             ax.text(
                 mid_x,
                 mid_y - 0.3,
@@ -230,7 +239,18 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 color="green",
                 ha="center",
                 va="center",
-            )  # Dimension label in white
+            )
+
+            # Display the length above the member name
+            ax.text(
+                mid_x,
+                mid_y + 0.3,
+                f"d-{length:.3f}",
+                fontsize=8,
+                color="blue",
+                ha="center",
+                va="center",
+            )
 
             # Calculate and display values at bottom end
             bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
@@ -257,7 +277,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             )
 
     for node, (x, y, z) in node_coordinates.items():
-        ax.scatter(x, y, color="blue")  # Red nodes
+        ax.scatter(x, y, color="blue")
 
     ax.set_xlabel("")
     ax.set_ylabel("")
