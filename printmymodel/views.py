@@ -201,7 +201,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             dimension_label = format_dimension_label(dimensions)
             mid_x = (x_values[0] + x_values[1]) / 2
             mid_y = (y_values[0] + y_values[1]) / 2
-            ax.text(mid_x, mid_y + 0.4, f'Member {member_no}', fontsize=8, color='white', ha='center', va='center')  # Member number in white
+            ax.text(mid_x, mid_y + 0.4, member_no, fontsize=8, color='white', ha='center', va='center')  # Member number in white
             ax.text(mid_x, mid_y - 0.4, dimension_label, fontsize=8, color='white', ha='center', va='center')  # Dimension label in white
 
     for node, (x, y, z) in node_coordinates.items():
