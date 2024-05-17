@@ -233,6 +233,30 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 va="center",
             )  # Dimension label in white
 
+            # Calculate and display values at bottom end
+            bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
+            ax.text(
+                x_values[0],
+                y_values[0] + 0.2,
+                f"{bottom_end_value}",
+                fontsize=8,
+                color="blue",
+                ha="center",
+                va="center",
+            )
+
+            # Calculate and display values at top end
+            top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
+            ax.text(
+                x_values[1],
+                y_values[1] - 0.2,
+                f"{top_end_value}",
+                fontsize=8,
+                color="blue",
+                ha="center",
+                va="center",
+            )
+
     for node, (x, y, z) in node_coordinates.items():
         ax.scatter(x, y, color="blue")  # Red nodes
 
@@ -246,3 +270,4 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     ax.set_yticks([])
 
     return fig, ax
+
