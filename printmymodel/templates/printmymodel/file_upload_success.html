@@ -13,6 +13,21 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .svg-container, .svg-container * {
+                visibility: visible;
+            }
+            .svg-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+            }
+        }
     </style>
 </head>
 <body>
