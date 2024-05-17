@@ -21,7 +21,7 @@ def get_frame_details(request):
             with open(file_path, "r") as file:
                 lines = file.readlines()
 
-            joined_frame = join_members(lines)
+            extracted_members = extract_members_and_nodes(lines)
             member_dimension = extract_member_dimensions(lines)
             member_properties_multiplied = {}
             for member, dimensions in member_dimension.items():
@@ -31,7 +31,7 @@ def get_frame_details(request):
             node_coordinates = extract_joint_coordinates(lines)
 
             fig, ax = draw_frame(
-                joined_frame, node_coordinates, member_properties_multiplied
+                extracted_members, node_coordinates, member_properties_multiplied
             )
 
             # Save the figure to a BytesIO object as SVG
@@ -47,7 +47,7 @@ def get_frame_details(request):
     return render(request, "printmymodel/frame_details.html")
 
 
-def join_members(lines):
+def extract_members_and_nodes(lines):
     in_member_incidences = False
     member_incidences = []
 

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>File Upload Success</title>
+    <title>Result</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <style>
         body {
@@ -33,11 +33,11 @@
 <body>
     <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center">
-            <h1 class="mb-4">File Upload Success</h1>
+            <h1 class="mb-4">Result</h1>
             <a href="{% url 'logout' %}" class="btn btn-danger">Logout</a>
         </div>
         <div class="alert alert-success">
-            <p>File uploaded successfully. Here is the generated image:</p>
+            <p>Model sucessfully read. Here is the generated image:</p>
         </div>
         <div class="svg-container">
             {{ svg_data|safe }}
