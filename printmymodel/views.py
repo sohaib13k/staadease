@@ -224,15 +224,6 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
 
             ax.text(
                 mid_x,
-                mid_y + 0.1,
-                member_no,
-                fontsize=8,
-                color="red",
-                ha="center",
-                va="center",
-            )
-            ax.text(
-                mid_x,
                 mid_y - 0.3,
                 dimension_label,
                 fontsize=8,
@@ -244,10 +235,10 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             # Display the length above the member name
             ax.text(
                 mid_x,
-                mid_y + 0.3,
-                f"d-{length:.3f}",
+                mid_y + 0.1,
+                f"{length:.3f}",
                 fontsize=8,
-                color="blue",
+                color="red",
                 ha="center",
                 va="center",
             )
