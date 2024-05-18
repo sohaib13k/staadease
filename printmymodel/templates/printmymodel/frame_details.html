@@ -27,7 +27,7 @@
             {% csrf_token %}
             <div class="mb-3">
                 <label for="anlFile" class="form-label">Choose .anl file</label>
-                <input type="file" class="form-control" id="anlFile" name="anl_file" accept=".anl" required>
+                <input type="file" class="form-control" id="anlFile" name="anl_file" accept=".anl,.std" required>
                 <div class="invalid-feedback">
                     Please select a valid .anl file.
                 </div>
