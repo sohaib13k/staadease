@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -29,9 +30,26 @@ def get_frame_details(request):
                     int(dim * 1000) for dim in dimensions
                 )
             node_coordinates = extract_joint_coordinates(lines)
+            coordinate_type = request.POST.get('coordinate_type')
+            coordinate_value = float(request.POST.get('coordinate_value'))
+            # x_list = json.loads(request.POST.get('x_list', '[]'))
+            # z_list = json.loads(request.POST.get('z_list', '[]'))
 
+            # Filter members based on coordinate type and value
+            filtered_members = []
+            for member in extracted_members:
+                member_no, bottom_joint, top_joint = member
+                bottom_coord = node_coordinates[bottom_joint]
+                top_coord = node_coordinates[top_joint]
+
+                if coordinate_type == "X" and (bottom_coord[0] == coordinate_value and top_coord[0] == coordinate_value):
+                    filtered_members.append(member)
+                elif coordinate_type == "Z" and (bottom_coord[2] == coordinate_value and top_coord[2] == coordinate_value):
+                    filtered_members.append(member)
+
+            # print(filtered_members)
             fig, ax = draw_frame(
-                extracted_members, node_coordinates, member_properties_multiplied
+                filtered_members, node_coordinates, member_properties_multiplied
             )
 
             # Save the figure to a BytesIO object as SVG
@@ -267,9 +285,6 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 ha="center",
                 va="center",
             )
-
-    for node, (x, y, z) in node_coordinates.items():
-        ax.scatter(x, y, color="blue")
 
     ax.set_xlabel("")
     ax.set_ylabel("")
