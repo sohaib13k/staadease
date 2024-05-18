@@ -227,9 +227,10 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 mid_y - 0.3,
                 dimension_label,
                 fontsize=8,
-                color="green",
+                color="yellow",
                 ha="center",
                 va="center",
+                bbox=dict(facecolor='black', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.1')
             )
 
             # Display the length above the member name
@@ -247,7 +248,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
             ax.text(
                 x_values[0],
-                y_values[0] + 0.2,
+                y_values[0] + 0.14,
                 f"{bottom_end_value}",
                 fontsize=8,
                 color="blue",
@@ -259,7 +260,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
             ax.text(
                 x_values[1],
-                y_values[1] - 0.2,
+                y_values[1] - 0.14,
                 f"{top_end_value}",
                 fontsize=8,
                 color="blue",
