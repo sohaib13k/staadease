@@ -54,99 +54,99 @@
             </div>
             <input type="hidden" name="x_list" id="xList">
             <input type="hidden" name="z_list" id="zList">
-            <button type="submit" class="btn btn-primary">Upload</button>
+            <button type="submit" class="btn btn-primary" id="uploadButton" disabled>Upload</button>
         </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
-    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script>
         document.getElementById('anlFile').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const content = e.target.result;
-                const lines = content.split('\n');
-                const zList = [];
-                const xList = [];
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    const lines = content.split('\n');
+                    const zList = [];
+                    const xList = [];
 
-                let inJointCoordinates = false;
+                    let inJointCoordinates = false;
 
-                lines.forEach(line => {
-                    const strippedLine = line.trim();
+                    lines.forEach(line => {
+                        const strippedLine = line.trim();
 
-                    if (strippedLine.includes("JOINT COORDINATES")) {
-                        inJointCoordinates = true;
-                        return;
-                    }
-
-                    if (inJointCoordinates) {
-                        if (strippedLine.includes("PAGE NO")) {
+                        if (strippedLine.includes("JOINT COORDINATES")) {
+                            inJointCoordinates = true;
                             return;
                         }
-                        if (strippedLine && !strippedLine.split(" ")[1].match(/^\d+$/)) {
-                            inJointCoordinates = false;
-                            return;
-                        }
-                        const cleanedLine = strippedLine.split(" ").slice(1).join(" ");
-                        const parts = cleanedLine.split(";");
-                        parts.forEach(part => {
-                            if (part.trim()) {
-                                const jointData = part.trim().split(/\s+/);
-                                if (jointData.length >= 4) {
-                                    const xCoord = parseFloat(jointData[1]).toFixed(2);
-                                    const yCoord = parseFloat(jointData[2]).toFixed(2);
-                                    const zCoord = parseFloat(jointData[3]).toFixed(2);
 
-                                    console.log(xCoord, yCoord, zCoord);
+                        if (inJointCoordinates) {
+                            if (strippedLine.includes("PAGE NO")) {
+                                return;
+                            }
+                            if (strippedLine && !strippedLine.split(" ")[1].match(/^\d+$/)) {
+                                inJointCoordinates = false;
+                                return;
+                            }
+                            const cleanedLine = strippedLine.split(" ").slice(1).join(" ");
+                            const parts = cleanedLine.split(";");
+                            parts.forEach(part => {
+                                if (part.trim()) {
+                                    const jointData = part.trim().split(/\s+/);
+                                    if (jointData.length >= 4) {
+                                        const xCoord = parseFloat(jointData[1]).toFixed(2);
+                                        const yCoord = parseFloat(jointData[2]).toFixed(2);
+                                        const zCoord = parseFloat(jointData[3]).toFixed(2);
 
-                                    if (parseFloat(xCoord) === 0 && parseFloat(yCoord) === 0) {
-                                        zList.push(zCoord);
-                                    }
-                                    if (parseFloat(yCoord) === 0 && parseFloat(zCoord) === 0) {
-                                        xList.push(xCoord);
+                                        console.log(xCoord, yCoord, zCoord);
+
+                                        if (parseFloat(xCoord) === 0 && parseFloat(yCoord) === 0) {
+                                            zList.push(zCoord);
+                                        }
+                                        if (parseFloat(yCoord) === 0 && parseFloat(zCoord) === 0) {
+                                            xList.push(xCoord);
+                                        }
                                     }
                                 }
-                            }
-                        });
+                            });
+                        }
+                    });
+
+                    // Sort the lists
+                    xList.sort((a, b) => a - b);
+                    zList.sort((a, b) => a - b);
+
+                    document.getElementById('xList').value = JSON.stringify(xList);
+                    document.getElementById('zList').value = JSON.stringify(zList);
+
+                    document.getElementById('coordinateSelection').style.display = 'block';
+
+                    // Auto-select "Select coordinate type" option
+                    document.getElementById('coordinateType').selectedIndex = 0;
+
+                    // Enable or disable form submission validation based on list content
+                    const form = document.getElementById('uploadForm');
+                    const coordinateType = document.getElementById('coordinateType').value;
+                    const coordinateValue = document.getElementById('coordinateValue').value;
+                    const isListsEmpty = xList.length === 0 && zList.length === 0;
+                    
+                    if (isListsEmpty) {
+                        form.removeAttribute('novalidate');
+                    } else if (!coordinateType || !coordinateValue) {
+                        form.setAttribute('novalidate', true);
                     }
-                });
-
-                // Sort the lists
-                xList.sort((a, b) => a - b);
-                zList.sort((a, b) => a - b);
-
-                document.getElementById('xList').value = JSON.stringify(xList);
-                document.getElementById('zList').value = JSON.stringify(zList);
-
-                document.getElementById('coordinateSelection').style.display = 'block';
-
-                // Auto-select "Select coordinate type" option
-                document.getElementById('coordinateType').selectedIndex = 0;
-
-                // Enable or disable form submission validation based on list content
-                const form = document.getElementById('uploadForm');
-                const coordinateType = document.getElementById('coordinateType').value;
-                const coordinateValue = document.getElementById('coordinateValue').value;
-                const isListsEmpty = xList.length === 0 && zList.length === 0;
-                
-                if (isListsEmpty) {
-                    form.removeAttribute('novalidate');
-                } else if (!coordinateType || !coordinateValue) {
-                    form.setAttribute('novalidate', true);
-                }
-            };
-            reader.readAsText(file);
-        }
-    });
-    
+                };
+                reader.readAsText(file);
+            }
+        });
+        
         document.getElementById('coordinateType').addEventListener('change', function() {
             const selectedType = this.value;
             const coordinateValueSelect = document.getElementById('coordinateValue');
             coordinateValueSelect.innerHTML = '';
-    
+
             const list = selectedType === 'X' ? JSON.parse(document.getElementById('xList').value) : JSON.parse(document.getElementById('zList').value);
-            
+
             // Check if the list is empty
             if (list.length === 0) {
                 const option = document.createElement('option');
@@ -162,16 +162,22 @@
                     coordinateValueSelect.appendChild(option);
                 });
             }
-    
+
             document.getElementById('coordinateValues').style.display = 'block';
+
+            // Enable or disable the submit button based on whether a value is populated
+            document.getElementById('uploadButton').disabled = coordinateValueSelect.value === '';
         });
-    
+
+        document.getElementById('coordinateValue').addEventListener('change', function() {
+            const selectedValue = this.value;
+            document.getElementById('uploadButton').disabled = !selectedValue; // Enable button only if a valid coordinate value is selected
+        });
+
         // Clear file input on page refresh
         window.onload = function() {
             document.getElementById('anlFile').value = '';
         };
     </script>
-
-
 </body>
 </html>

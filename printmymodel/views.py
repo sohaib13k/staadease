@@ -4,10 +4,14 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from io import BytesIO
 from django.core.files.storage import FileSystemStorage
+
+# z-axis : 58.75
+# bean : 76
 
 
 @login_required
@@ -15,6 +19,16 @@ def get_frame_details(request):
     if request.method == "POST":
         anl_file = request.FILES.get("anl_file")
         if anl_file:
+            if not anl_file.name.lower().endswith(".anl"):
+                return render(
+                    request,
+                    "printmymodel/file_upload_success.html",
+                    {
+                        "status": "error",
+                        "message": "Invalid file type. Only .anl files are allowed.",
+                    },
+                )
+
             fs = FileSystemStorage(location=settings.MODEL_DIR)
             filename = fs.save(anl_file.name, anl_file)
             file_path = fs.path(filename)
@@ -30,8 +44,16 @@ def get_frame_details(request):
                     int(dim * 1000) for dim in dimensions
                 )
             node_coordinates = extract_joint_coordinates(lines)
-            coordinate_type = request.POST.get('coordinate_type')
-            coordinate_value = float(request.POST.get('coordinate_value'))
+            coordinate_type = request.POST.get("coordinate_type")
+            coordinate_value = request.POST.get("coordinate_value")
+            if coordinate_value:
+                coordinate_value = float(coordinate_value)
+            else:
+                return render(
+                    request,
+                    "printmymodel/file_upload_success.html",
+                    {"status": "error", "message": "No coordinate provided"},
+                )
             # x_list = json.loads(request.POST.get('x_list', '[]'))
             # z_list = json.loads(request.POST.get('z_list', '[]'))
 
@@ -42,9 +64,15 @@ def get_frame_details(request):
                 bottom_coord = node_coordinates[bottom_joint]
                 top_coord = node_coordinates[top_joint]
 
-                if coordinate_type == "X" and (round(bottom_coord[0], 2) == round(coordinate_value, 2) and round(top_coord[0], 2) == round(coordinate_value, 2)):
+                if coordinate_type == "X" and (
+                    round(bottom_coord[0], 2) == round(coordinate_value, 2)
+                    and round(top_coord[0], 2) == round(coordinate_value, 2)
+                ):
                     filtered_members.append(member)
-                elif coordinate_type == "Z" and (round(bottom_coord[2], 2) == round(coordinate_value, 2) and round(top_coord[2], 2) == round(coordinate_value, 2)):
+                elif coordinate_type == "Z" and (
+                    round(bottom_coord[2], 2) == round(coordinate_value, 2)
+                    and round(top_coord[2], 2) == round(coordinate_value, 2)
+                ):
                     filtered_members.append(member)
 
             # print(filtered_members)
@@ -59,7 +87,13 @@ def get_frame_details(request):
             svg_data = buffer.getvalue().decode("utf-8")
 
             return render(
-                request, "printmymodel/file_upload_success.html", {"svg_data": svg_data}
+                request,
+                "printmymodel/file_upload_success.html",
+                {
+                    "svg_data": svg_data,
+                    "status": "success",
+                    "message": "Model successfully read. Here is the generated image",
+                },
             )
 
     return render(request, "printmymodel/frame_details.html")
@@ -131,7 +165,7 @@ def extract_member_dimensions(lines):
                         current_line_index = next_line_index + 1
                         break
                     else:
-                        combined_line += " " + ' '.join(next_line.split()[1:])
+                        combined_line += " " + " ".join(next_line.split()[1:])
                         current_line_index = next_line_index
                         break
                 stripped_line = combined_line
@@ -245,7 +279,12 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 color="yellow",
                 ha="center",
                 va="center",
-                bbox=dict(facecolor='black', alpha=0.8, edgecolor='none', boxstyle='round,pad=0.1')
+                bbox=dict(
+                    facecolor="black",
+                    alpha=0.8,
+                    edgecolor="none",
+                    boxstyle="round,pad=0.1",
+                ),
             )
 
             # Display the length above the member name
