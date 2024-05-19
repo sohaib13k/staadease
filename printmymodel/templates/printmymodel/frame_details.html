@@ -94,14 +94,16 @@
                             if (part.trim()) {
                                 const jointData = part.trim().split(/\s+/);
                                 if (jointData.length >= 4) {
-                                    const xCoord = parseFloat(jointData[1]);
-                                    const yCoord = parseFloat(jointData[2]);
-                                    const zCoord = parseFloat(jointData[3]);
+                                    const xCoord = parseFloat(jointData[1]).toFixed(2);
+                                    const yCoord = parseFloat(jointData[2]).toFixed(2);
+                                    const zCoord = parseFloat(jointData[3]).toFixed(2);
 
-                                    if (xCoord === 0 && yCoord === 0) {
+                                    console.log(xCoord, yCoord, zCoord);
+
+                                    if (parseFloat(xCoord) === 0 && parseFloat(yCoord) === 0) {
                                         zList.push(zCoord);
                                     }
-                                    if (yCoord === 0 && zCoord === 0) {
+                                    if (parseFloat(yCoord) === 0 && parseFloat(zCoord) === 0) {
                                         xList.push(xCoord);
                                     }
                                 }

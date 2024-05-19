@@ -42,9 +42,9 @@ def get_frame_details(request):
                 bottom_coord = node_coordinates[bottom_joint]
                 top_coord = node_coordinates[top_joint]
 
-                if coordinate_type == "X" and (bottom_coord[0] == coordinate_value and top_coord[0] == coordinate_value):
+                if coordinate_type == "X" and (round(bottom_coord[0], 2) == round(coordinate_value, 2) and round(top_coord[0], 2) == round(coordinate_value, 2)):
                     filtered_members.append(member)
-                elif coordinate_type == "Z" and (bottom_coord[2] == coordinate_value and top_coord[2] == coordinate_value):
+                elif coordinate_type == "Z" and (round(bottom_coord[2], 2) == round(coordinate_value, 2) and round(top_coord[2], 2) == round(coordinate_value, 2)):
                     filtered_members.append(member)
 
             # print(filtered_members)
@@ -127,14 +127,11 @@ def extract_member_dimensions(lines):
                 next_line_index = current_line_index + 1
                 while next_line_index < len(lines):
                     next_line = lines[next_line_index].strip()
-                    if next_line.endswith("-"):
-                        combined_line += " " + next_line[:-1].strip()
-                        next_line_index += 1
-                    elif "TABLE" in next_line:
+                    if "TABLE" in next_line:
                         current_line_index = next_line_index + 1
                         break
                     else:
-                        combined_line += " " + next_line
+                        combined_line += " " + ' '.join(next_line.split()[1:])
                         current_line_index = next_line_index
                         break
                 stripped_line = combined_line
