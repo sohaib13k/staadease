@@ -162,7 +162,7 @@ def extract_member_dimensions(lines):
                 while next_line_index < len(lines):
                     next_line = lines[next_line_index].strip()
                     if next_line.endswith("-"):
-                        combined_line += " " + next_line[:-1].strip()
+                        combined_line += " " + " ".join(next_line.split()[1:-1])
                         next_line_index += 1
                     elif "TABLE" in next_line:
                         current_line_index = next_line_index + 1
@@ -206,6 +206,10 @@ def extract_member_dimensions(lines):
                     members = expanded_members
                 else:
                     members = [int(member) for member in members]
+                # Adjust property data to ensure there are seven elements
+                if len(property_data) == 5:
+                    property_data.insert(5, property_data[3])
+                    property_data.insert(6, property_data[4])
                 dimensions = tuple(map(float, property_data))
                 for member in members:
                     member_properties[member] = dimensions
@@ -271,19 +275,6 @@ def format_dimension_label(dimensions):
 
 def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     fig, ax = plt.subplots(figsize=(12, 10))
-
-    for member_no, dimensions in member_dimension.items():
-        if dimensions:
-            dimensions = list(dimensions)  # Convert tuple to list
-            if len(dimensions) == 5:
-                dimensions.append(4)
-                dimensions.append(5)
-            elif len(dimensions) == 6:
-                dimensions.append(5)
-            elif len(dimensions) < 5:
-                while len(dimensions) < 7:
-                    dimensions.append(1)
-            member_dimension[member_no] = dimensions  # Update the dictionary with the modified list
 
     for member in members_and_nodes:
         member_no, bottom_joint, top_joint = member
