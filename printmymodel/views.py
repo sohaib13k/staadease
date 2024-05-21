@@ -250,23 +250,6 @@ def extract_joint_coordinates(lines):
 
 
 def format_dimension_label(dimensions):
-    if len(dimensions) < 5:
-        of = f"OF-"
-        web = f"WEB-"
-        if_ = f"IF-"
-        return f"{of}\n{web}\n{if_}"
-    
-    if len(dimensions) == 5:
-        dimensions = list(dimensions)
-        dimensions.append(4)
-        dimensions.append(5)
-
-    if len(dimensions) == 6:
-        dimensions = list(dimensions)
-        dimensions.append(5)
-
-
-
     of = f"OF- {int(dimensions[3])}X{int(dimensions[4])}"
     web = f"WEB- {int(dimensions[1])}thk."
     if_ = f"IF- {int(dimensions[5])}X{int(dimensions[6])}"
