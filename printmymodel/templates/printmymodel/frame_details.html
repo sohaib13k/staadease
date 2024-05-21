@@ -95,15 +95,12 @@
                                     const jointData = part.trim().split(/\s+/);
                                     if (jointData.length >= 4) {
                                         const xCoord = parseFloat(jointData[1]).toFixed(2);
-                                        const yCoord = parseFloat(jointData[2]).toFixed(2);
                                         const zCoord = parseFloat(jointData[3]).toFixed(2);
 
-                                        console.log(xCoord, yCoord, zCoord);
-
-                                        if (parseFloat(xCoord) === 0 && parseFloat(yCoord) === 0) {
+                                        if (!zList.includes(zCoord)) {
                                             zList.push(zCoord);
                                         }
-                                        if (parseFloat(yCoord) === 0 && parseFloat(zCoord) === 0) {
+                                        if (!xList.includes(xCoord)) {
                                             xList.push(xCoord);
                                         }
                                     }

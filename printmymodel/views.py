@@ -148,11 +148,11 @@ def extract_member_dimensions(lines):
 
             if (
                 "*---------------------------------------------------------------------------*"
-                in line
+                in line or 'CONSTANTS' in line
             ):
                 break
 
-            if "TABLE" in stripped_line:
+            if "TABLE" in stripped_line or '*' in stripped_line:
                 current_line_index += 1
                 continue
 
@@ -161,7 +161,10 @@ def extract_member_dimensions(lines):
                 next_line_index = current_line_index + 1
                 while next_line_index < len(lines):
                     next_line = lines[next_line_index].strip()
-                    if "TABLE" in next_line:
+                    if next_line.endswith("-"):
+                        combined_line += " " + next_line[:-1].strip()
+                        next_line_index += 1
+                    elif "TABLE" in next_line:
                         current_line_index = next_line_index + 1
                         break
                     else:
@@ -243,6 +246,23 @@ def extract_joint_coordinates(lines):
 
 
 def format_dimension_label(dimensions):
+    if len(dimensions) < 5:
+        of = f"OF-"
+        web = f"WEB-"
+        if_ = f"IF-"
+        return f"{of}\n{web}\n{if_}"
+    
+    if len(dimensions) == 5:
+        dimensions = list(dimensions)
+        dimensions.append(4)
+        dimensions.append(5)
+
+    if len(dimensions) == 6:
+        dimensions = list(dimensions)
+        dimensions.append(5)
+
+
+
     of = f"OF- {int(dimensions[3])}X{int(dimensions[4])}"
     web = f"WEB- {int(dimensions[1])}thk."
     if_ = f"IF- {int(dimensions[5])}X{int(dimensions[6])}"
@@ -251,6 +271,19 @@ def format_dimension_label(dimensions):
 
 def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     fig, ax = plt.subplots(figsize=(12, 10))
+
+    for member_no, dimensions in member_dimension.items():
+        if dimensions:
+            dimensions = list(dimensions)  # Convert tuple to list
+            if len(dimensions) == 5:
+                dimensions.append(4)
+                dimensions.append(5)
+            elif len(dimensions) == 6:
+                dimensions.append(5)
+            elif len(dimensions) < 5:
+                while len(dimensions) < 7:
+                    dimensions.append(1)
+            member_dimension[member_no] = dimensions  # Update the dictionary with the modified list
 
     for member in members_and_nodes:
         member_no, bottom_joint, top_joint = member
@@ -299,6 +332,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             )
 
             # Calculate and display values at bottom end
+
             bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
             ax.text(
                 x_values[0],
