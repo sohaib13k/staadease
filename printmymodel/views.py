@@ -1,4 +1,4 @@
-import json
+import re
 import numpy as np
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -12,6 +12,17 @@ from django.core.files.storage import FileSystemStorage
 
 # z-axis : 58.75
 # bean : 76
+
+
+def remove_lines_containing_page_no_and_blank(lines):
+    filtered_lines = [
+        line for line in lines if "PAGE NO" not in line and line.strip() != ""
+    ]
+    return filtered_lines
+
+
+def strip_initial_numbering(line):
+    return re.sub(r"^\s*\d+\.\s+", "", line)
 
 
 @login_required
@@ -34,15 +45,23 @@ def get_frame_details(request):
             file_path = fs.path(filename)
 
             with open(file_path, "r") as file:
-                lines = file.readlines()
+                read_line = file.readlines()
+
+            lines = remove_lines_containing_page_no_and_blank(read_line)
+            lines = [strip_initial_numbering(line) for line in lines]
 
             extracted_members = extract_members_and_nodes(lines)
             member_dimension = extract_member_dimensions(lines)
+
             member_properties_multiplied = {}
             for member, dimensions in member_dimension.items():
-                member_properties_multiplied[member] = tuple(
-                    int(dim * 1000) for dim in dimensions
-                )
+                if isinstance(dimensions, tuple):
+                    member_properties_multiplied[member] = tuple(
+                        int(d * 1000) for d in dimensions
+                    )
+                else:
+                    member_properties_multiplied[member] = dimensions
+
             node_coordinates = extract_joint_coordinates(lines)
             coordinate_type = request.POST.get("coordinate_type")
             coordinate_value = request.POST.get("coordinate_value")
@@ -75,7 +94,6 @@ def get_frame_details(request):
                 ):
                     filtered_members.append(member)
 
-            # print(filtered_members)
             fig, ax = draw_frame(
                 filtered_members, node_coordinates, member_properties_multiplied
             )
@@ -111,12 +129,9 @@ def extract_members_and_nodes(lines):
             continue
 
         if in_member_incidences:
-            if "PAGE NO." in stripped_line:
-                continue
-
-            if stripped_line and not stripped_line.split(" ")[1].isdigit():
+            if stripped_line and not stripped_line.split(" ")[0].isdigit():
                 break
-            stripped_line = " ".join(stripped_line.split(" ")[1:])
+
             parts = stripped_line.split(";")
             for part in parts:
                 if part.strip():
@@ -126,11 +141,71 @@ def extract_members_and_nodes(lines):
     return member_incidences
 
 
+def expand_ranges(line):
+    parts = line.split()
+    expanded_parts = []
+    i = 0
+    while i < len(parts):
+        if parts[i] == "TO":
+            start = int(parts[i - 1])
+            end = int(parts[i + 1])
+            expanded_parts.extend(range(start + 1, end + 1))
+            i += 2
+        else:
+            expanded_parts.append(parts[i])
+            i += 1
+    return " ".join(map(str, expanded_parts))
+
+
+def preprocess_line(line, previous_line):
+    stripped_line = line.strip()
+    # Merge lines ending with '-'
+    if stripped_line.endswith("-"):
+        merged_line = previous_line + stripped_line[:-1].strip() + " "
+        return merged_line, True
+    else:
+        merged_line = previous_line + stripped_line
+        # Expand ranges containing 'TO'
+        if " TO " in merged_line:
+            merged_line = expand_ranges(merged_line)
+        return merged_line, False
+
+
+def expand_ranges(line):
+    parts = line.split()
+    expanded_parts = []
+    i = 0
+    while i < len(parts):
+        if parts[i] == "TO":
+            start = int(parts[i - 1])
+            end = int(parts[i + 1])
+            expanded_parts.extend(range(start + 1, end + 1))
+            i += 2
+        else:
+            expanded_parts.append(parts[i])
+            i += 1
+    return " ".join(map(str, expanded_parts))
+
+
+def preprocess_line(line, previous_line):
+    stripped_line = line.strip()
+    # Merge lines ending with '-'
+    if stripped_line.endswith("-"):
+        merged_line = previous_line + stripped_line[:-1].strip() + " "
+        return merged_line, True
+    else:
+        merged_line = previous_line + stripped_line
+        # Expand ranges containing 'TO'
+        if " TO " in merged_line:
+            merged_line = expand_ranges(merged_line)
+        return merged_line, False
+
+
 def extract_member_dimensions(lines):
     in_member_property = False
     member_properties = {}
-
     current_line_index = 0
+    previous_line = ""
 
     while current_line_index < len(lines):
         line = lines[current_line_index]
@@ -142,70 +217,53 @@ def extract_member_dimensions(lines):
             continue
 
         if in_member_property:
-            if "PAGE NO." in stripped_line or not line.strip():
+            # Preprocess the line (merge, strip numbering, expand ranges)
+            stripped_line, continue_flag = preprocess_line(line, previous_line)
+            if continue_flag:
+                previous_line = stripped_line
                 current_line_index += 1
                 continue
+            previous_line = ""
 
             if (
                 "*---------------------------------------------------------------------------*"
-                in line or 'CONSTANTS' in line
+                in stripped_line
+                or "CONSTANTS" in stripped_line
             ):
                 break
-
-            if "TABLE" in stripped_line or '*' in stripped_line:
+            if "*" in stripped_line:
                 current_line_index += 1
                 continue
 
-            if stripped_line.endswith("-"):
-                combined_line = stripped_line[:-1].strip()
-                next_line_index = current_line_index + 1
-                while next_line_index < len(lines):
-                    next_line = lines[next_line_index].strip()
-                    if next_line.endswith("-"):
-                        combined_line += " " + " ".join(next_line.split()[1:-1])
-                        next_line_index += 1
-                    elif "TABLE" in next_line:
-                        current_line_index = next_line_index + 1
-                        break
-                    else:
-                        combined_line += " " + " ".join(next_line.split()[1:])
-                        current_line_index = next_line_index
-                        break
-                stripped_line = combined_line
-
-            if "TABLE" in stripped_line:
-                current_line_index += 1
-                continue
-
-            stripped_line = " ".join(stripped_line.split(" ")[1:])
             parts = stripped_line.split(" ")
             property_data = []
             members = []
             dimensions_start = False
+            table_mode = False
+            table_data = ""
+
             for part in parts:
-                if part.isdigit() or (part == "TO"):
+                if part.isdigit():
                     members.append(part)
+                elif part == "TABLE":
+                    table_mode = True
                 else:
-                    if part != "TAPERED":
+                    if table_mode:
+                        table_data += part + " "
+                    else:
                         dimensions_start = True
                         property_data.append(part)
 
-            if dimensions_start:
-                if "TO" in members:
-                    expanded_members = []
-                    i = 0
-                    while i < len(members):
-                        if members[i] == "TO":
-                            start = int(members[i - 1])
-                            end = int(members[i + 1])
-                            expanded_members.extend(range(start, end + 1))
-                            i += 2
-                        else:
-                            expanded_members.append(int(members[i]))
-                        i += 1
-                    members = expanded_members
-                else:
-                    members = [int(member) for member in members]
+            if table_mode:
+                members = [int(member) for member in members]
+                table_data = table_data.strip()
+                for member in members:
+                    member_properties[member] = table_data
+            elif dimensions_start:
+                members = [int(member) for member in members]
+                # Handle TAPERED and other cases
+                if "TAPERED" in property_data:
+                    property_data.remove("TAPERED")
                 # Adjust property data to ensure there are seven elements
                 if len(property_data) == 5:
                     property_data.insert(5, property_data[3])
@@ -217,6 +275,14 @@ def extract_member_dimensions(lines):
         current_line_index += 1
 
     return member_properties
+
+
+def is_number(s):
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 
 def extract_joint_coordinates(lines):
@@ -231,11 +297,8 @@ def extract_joint_coordinates(lines):
             continue
 
         if in_joint_coordinates:
-            if "PAGE NO." in stripped_line:
-                continue
-            if stripped_line and not stripped_line.split(" ")[1].isdigit():
+            if stripped_line and not is_number(stripped_line.split(" ")[0]):
                 break
-            stripped_line = " ".join(stripped_line.split(" ")[1:])
             parts = stripped_line.split(";")
             for part in parts:
                 if part.strip():
@@ -250,10 +313,20 @@ def extract_joint_coordinates(lines):
 
 
 def format_dimension_label(dimensions):
-    of = f"OF- {int(dimensions[3])}X{int(dimensions[4])}"
-    web = f"WEB- {int(dimensions[1])}thk."
-    if_ = f"IF- {int(dimensions[5])}X{int(dimensions[6])}"
-    return f"{of}\n{web}\n{if_}"
+    if isinstance(dimensions, tuple):
+        of = f"OF- {int(dimensions[3])}X{int(dimensions[4])}"
+        web = f"WEB- {int(dimensions[1])}thk."
+        if_ = f"IF- {int(dimensions[5])}X{int(dimensions[6])}"
+        return f"{of}\n{web}\n{if_}"
+    else:
+        return dimensions
+
+
+def write_member_dimensions_to_file(member_properties, output_file_path):
+    with open(output_file_path, "w") as file:
+        for member, dimensions in sorted(member_properties.items()):
+            dimensions_str = " ".join(map(str, dimensions))
+            file.write(f"{dimensions_str}\n")
 
 
 def draw_frame(members_and_nodes, node_coordinates, member_dimension):
@@ -306,8 +379,9 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             )
 
             # Calculate and display values at bottom end
+            if isinstance(dimensions, tuple):
+                bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
 
-            bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
             ax.text(
                 x_values[0],
                 y_values[0] + 0.14,
@@ -319,7 +393,8 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             )
 
             # Calculate and display values at top end
-            top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
+            if isinstance(dimensions, tuple):
+                top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
             ax.text(
                 x_values[1],
                 y_values[1] - 0.14,
