@@ -44,8 +44,13 @@ def get_frame_details(request):
             filename = fs.save(anl_file.name, anl_file)
             file_path = fs.path(filename)
 
-            with open(file_path, "r", encoding='latin-1') as file:
-                read_line = file.readlines()
+            for encoding in ["utf-8", "latin-1", "cp1252"]:
+                try:
+                    with open(file_path, "r", encoding=encoding) as file:
+                        read_line = file.readlines()
+                    break
+                except UnicodeDecodeError:
+                    continue
 
             lines = remove_lines_containing_page_no_and_blank(read_line)
             lines = [strip_initial_numbering(line) for line in lines]
