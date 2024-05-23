@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,6 +15,20 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #threeContainer {
+            width: 100%;
+            height: 800px;
+            overflow: hidden;
+            position: relative;
+        }
+        #threeCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .box-container {
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -57,124 +72,229 @@
             <button type="submit" class="btn btn-primary" id="uploadButton" disabled>Upload</button>
         </form>
     </div>
+
+    <div class="container mt-5 box-container">
+        <div id="threeContainer">
+            <canvas id="threeCanvas"></canvas>
+        </div>
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{% static 'js/DragControls.js' %}"></script>
+    <script src="{% static 'js/OrbitControls.js' %}"></script>
     <script>
-        document.getElementById('anlFile').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const content = e.target.result;
-                    const lines = content.split('\n');
-                    const zList = [];
-                    const xList = [];
+        document.addEventListener('DOMContentLoaded', function() {
+            let jointDataList = [];
 
-                    let inJointCoordinates = false;
+            document.getElementById('anlFile').addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const content = e.target.result;
+                        const lines = content.split('\n');
+                        const zList = [];
+                        const xList = [];
+                        jointDataList = [];
 
-                    lines.forEach(line => {
-                        const strippedLine = line.trim();
+                        let inJointCoordinates = false;
 
-                        if (strippedLine.includes("JOINT COORDINATES")) {
-                            inJointCoordinates = true;
-                            return;
-                        }
+                        lines.forEach(line => {
+                            const strippedLine = line.trim();
 
-                        if (inJointCoordinates) {
-                            if (strippedLine.includes("PAGE NO")) {
+                            if (strippedLine.includes("JOINT COORDINATES")) {
+                                inJointCoordinates = true;
                                 return;
                             }
-                            if (strippedLine && !strippedLine.split(" ")[1].match(/^\d+$/)) {
-                                inJointCoordinates = false;
-                                return;
-                            }
-                            const cleanedLine = strippedLine.split(" ").slice(1).join(" ");
-                            const parts = cleanedLine.split(";");
-                            parts.forEach(part => {
-                                if (part.trim()) {
-                                    const jointData = part.trim().split(/\s+/);
-                                    if (jointData.length >= 4) {
-                                        const xCoord = parseFloat(jointData[1]).toFixed(2);
-                                        const zCoord = parseFloat(jointData[3]).toFixed(2);
 
-                                        if (!zList.includes(zCoord)) {
-                                            zList.push(zCoord);
-                                        }
-                                        if (!xList.includes(xCoord)) {
-                                            xList.push(xCoord);
+                            if (inJointCoordinates) {
+                                if (strippedLine.includes("PAGE NO")) {
+                                    return;
+                                }
+                                if (strippedLine && !strippedLine.split(" ")[1].match(/^\d+$/)) {
+                                    inJointCoordinates = false;
+                                    return;
+                                }
+                                const cleanedLine = strippedLine.split(" ").slice(1).join(" ");
+                                const parts = cleanedLine.split(";");
+                                parts.forEach(part => {
+                                    if (part.trim()) {
+                                        const jointData = part.trim().split(/\s+/);
+                                        if (jointData.length >= 4) {
+                                            const nodeNo = jointData[0];
+                                            const xCoord = parseFloat(jointData[1]).toFixed(2);
+                                            const yCoord = parseFloat(jointData[2]).toFixed(2);
+                                            const zCoord = parseFloat(jointData[3]).toFixed(2);
+
+                                            jointDataList.push({ nodeNo, xCoord, yCoord, zCoord });
+
+                                            if (!zList.includes(zCoord)) {
+                                                zList.push(zCoord);
+                                            }
+                                            if (!xList.includes(xCoord)) {
+                                                xList.push(xCoord);
+                                            }
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
+                        });
+
+                        // Sort the lists
+                        xList.sort((a, b) => a - b);
+                        zList.sort((a, b) => a - b);
+
+                        document.getElementById('xList').value = JSON.stringify(xList);
+                        document.getElementById('zList').value = JSON.stringify(zList);
+
+                        document.getElementById('coordinateSelection').style.display = 'block';
+
+                        // Auto-select "Select coordinate type" option
+                        document.getElementById('coordinateType').selectedIndex = 0;
+
+                        // Enable or disable form submission validation based on list content
+                        const form = document.getElementById('uploadForm');
+                        const coordinateType = document.getElementById('coordinateType').value;
+                        const coordinateValue = document.getElementById('coordinateValue').value;
+                        const isListsEmpty = xList.length === 0 && zList.length === 0;
+
+                        if (isListsEmpty) {
+                            form.removeAttribute('novalidate');
+                        } else if (!coordinateType || !coordinateValue) {
+                            form.setAttribute('novalidate', true);
                         }
-                    });
 
-                    // Sort the lists
-                    xList.sort((a, b) => a - b);
-                    zList.sort((a, b) => a - b);
+                        // Call the function to render the 3D model
+                        render3DModel();
+                    };
+                    reader.readAsText(file);
+                }
+            });
 
-                    document.getElementById('xList').value = JSON.stringify(xList);
-                    document.getElementById('zList').value = JSON.stringify(zList);
+            document.getElementById('coordinateType').addEventListener('change', function() {
+                const selectedType = this.value;
+                const coordinateValueSelect = document.getElementById('coordinateValue');
+                coordinateValueSelect.innerHTML = '';
 
-                    document.getElementById('coordinateSelection').style.display = 'block';
+                const list = selectedType === 'X' ? JSON.parse(document.getElementById('xList').value) : JSON.parse(document.getElementById('zList').value);
 
-                    // Auto-select "Select coordinate type" option
-                    document.getElementById('coordinateType').selectedIndex = 0;
-
-                    // Enable or disable form submission validation based on list content
-                    const form = document.getElementById('uploadForm');
-                    const coordinateType = document.getElementById('coordinateType').value;
-                    const coordinateValue = document.getElementById('coordinateValue').value;
-                    const isListsEmpty = xList.length === 0 && zList.length === 0;
-                    
-                    if (isListsEmpty) {
-                        form.removeAttribute('novalidate');
-                    } else if (!coordinateType || !coordinateValue) {
-                        form.setAttribute('novalidate', true);
-                    }
-                };
-                reader.readAsText(file);
-            }
-        });
-        
-        document.getElementById('coordinateType').addEventListener('change', function() {
-            const selectedType = this.value;
-            const coordinateValueSelect = document.getElementById('coordinateValue');
-            coordinateValueSelect.innerHTML = '';
-
-            const list = selectedType === 'X' ? JSON.parse(document.getElementById('xList').value) : JSON.parse(document.getElementById('zList').value);
-
-            // Check if the list is empty
-            if (list.length === 0) {
-                const option = document.createElement('option');
-                option.value = '';
-                option.text = 'No coordinates available';
-                option.disabled = true;
-                coordinateValueSelect.appendChild(option);
-            } else {
-                list.forEach(value => {
+                // Check if the list is empty
+                if (list.length === 0) {
                     const option = document.createElement('option');
-                    option.value = value;
-                    option.text = value;
+                    option.value = '';
+                    option.text = 'No coordinates available';
+                    option.disabled = true;
                     coordinateValueSelect.appendChild(option);
+                } else {
+                    list.forEach(value => {
+                        const option = document.createElement('option');
+                        option.value = value;
+                        option.text = value;
+                        coordinateValueSelect.appendChild(option);
+                    });
+                }
+
+                document.getElementById('coordinateValues').style.display = 'block';
+
+                // Enable or disable the submit button based on whether a value is populated
+                document.getElementById('uploadButton').disabled = coordinateValueSelect.value === '';
+            });
+
+            document.getElementById('coordinateValue').addEventListener('change', function() {
+                const selectedValue = this.value;
+                document.getElementById('uploadButton').disabled = !selectedValue; // Enable button only if a valid coordinate value is selected
+            });
+
+            // Clear file input on page refresh
+            window.onload = function() {
+                document.getElementById('anlFile').value = '';
+            };
+
+            function render3DModel() {
+                // Remove any existing renderer
+                const existingCanvas = document.querySelector('#threeCanvas');
+                if (existingCanvas) {
+                    existingCanvas.remove();
+                }
+
+                // Create a scene
+                const scene = new THREE.Scene();
+
+                // Create a camera, which determines what we'll see when we render the scene
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.set(5, 5, 5);
+
+                // Create a renderer and add it to our document
+                const renderer = new THREE.WebGLRenderer();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.domElement.id = 'threeCanvas';
+                document.getElementById('threeContainer').appendChild(renderer.domElement);
+
+                // Add controls to rotate and zoom the model
+                const controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.25;
+                controls.screenSpacePanning = false;
+                controls.maxPolarAngle = Math.PI / 2;
+
+                // Add axes helper to the scene
+                const axesHelper = new THREE.AxesHelper(5);
+                scene.add(axesHelper);
+
+                // Create points for each joint
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                const labels = [];
+                
+                jointDataList.forEach(joint => {
+                    vertices.push(joint.xCoord, joint.yCoord, joint.zCoord);
+                    labels.push([joint.nodeNo, joint.xCoord, joint.yCoord, joint.zCoord]);
                 });
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+
+                const material = new THREE.PointsMaterial({ color: 0x00ff00, size: 0.1 });
+                const points = new THREE.Points(geometry, material);
+                scene.add(points);
+
+                // Create labels for each joint
+                labels.forEach(label => {
+                    const nodeLabel = createTextSprite(label.join(', '));
+                    nodeLabel.position.set(label[1], label[2], label[3]);
+                    scene.add(nodeLabel);
+                });
+
+                // Add ambient light
+                const light = new THREE.AmbientLight(0x404040);
+                scene.add(light);
+
+                // Create a function to animate our scene
+                function animate() {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+
+                // Run the animation function for the first time to kick things off
+                animate();
             }
 
-            document.getElementById('coordinateValues').style.display = 'block';
+            function createTextSprite(message) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                context.font = 'Bold 24px Arial';
+                context.fillStyle = 'rgba(255,255,255,1.0)';
+                context.fillText(message, 0, 24);
 
-            // Enable or disable the submit button based on whether a value is populated
-            document.getElementById('uploadButton').disabled = coordinateValueSelect.value === '';
+                const texture = new THREE.CanvasTexture(canvas);
+                const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.scale.set(2, 1, 1);
+                return sprite;
+            }
         });
-
-        document.getElementById('coordinateValue').addEventListener('change', function() {
-            const selectedValue = this.value;
-            document.getElementById('uploadButton').disabled = !selectedValue; // Enable button only if a valid coordinate value is selected
-        });
-
-        // Clear file input on page refresh
-        window.onload = function() {
-            document.getElementById('anlFile').value = '';
-        };
     </script>
 </body>
 </html>
