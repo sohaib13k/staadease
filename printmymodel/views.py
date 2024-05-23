@@ -44,7 +44,7 @@ def get_frame_details(request):
             filename = fs.save(anl_file.name, anl_file)
             file_path = fs.path(filename)
 
-            with open(file_path, "r") as file:
+            with open(file_path, "r", encoding='latin-1') as file:
                 read_line = file.readlines()
 
             lines = remove_lines_containing_page_no_and_blank(read_line)
