@@ -362,14 +362,15 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             mid_x = (x1 + x2) / 2
             mid_y = (y1 + y2) / 2
 
-            dimension_labels.append((mid_x, mid_y, f"{dimension_label}\n{length:.3f}"))
 
             if isinstance(dimensions, tuple):
                 bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
                 top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
 
-                ax.text(x1, y1 + 0.14, f"↓{bottom_end_value}", fontsize=5, color="blue", ha="center", va="center")
-                ax.text(x2, y2 - 0.14, f"↑{top_end_value}", fontsize=5, color="blue", ha="center", va="center")
+                # ax.text(x1, y1 + 0.14, f"↓{bottom_end_value}", fontsize=5, color="blue", ha="center", va="center")
+                # ax.text(x2, y2 - 0.14, f"↑{top_end_value}", fontsize=5, color="blue", ha="center", va="center")
+
+            dimension_labels.append((mid_x, mid_y, f"{dimension_label}\nd={length:.3f}\n↑{top_end_value}\n↓{bottom_end_value}"))
 
     # Allocate dimension labels
     ta.allocate(
@@ -378,12 +379,12 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
         [t[1] for t in dimension_labels],
         [t[2] for t in dimension_labels],
         textsize=5,
-        textcolor="#f5f10f",
+        textcolor="yellow",
         linecolor="k",
         linewidth=0.4,
-        direction="northeast",
+        # direction="northeast",
         bbox=dict(
-            facecolor="black", alpha=0.6, edgecolor="none", boxstyle="round,pad=0.05"
+            facecolor="black", alpha=0.8, edgecolor="none", boxstyle="round,pad=0.1"
         ),
     )
 
