@@ -368,11 +368,11 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
                 bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
                 top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
 
-            text_list.append((x1, y1, f"{bottom_end_value}"))
-            text_list.append((x2, y2, f"{top_end_value}"))
+            text_list.append((x1, y1, f"↓{bottom_end_value}"))
+            text_list.append((x2, y2, f"↑{top_end_value}"))
 
         # Add member number text annotation
-        ax.text((x1 + x2) / 2, (y1 + y2) / 2, member_no, fontsize=5, color="red", ha="center", va="center")
+        ax.text((x1 + x2) / 2, (y1 + y2) / 2, length, fontsize=5, color="red", ha="center", va="center")
 
     ta.allocate(
         ax,
