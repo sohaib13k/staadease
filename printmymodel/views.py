@@ -1,3 +1,4 @@
+import textalloc as ta
 import re
 import numpy as np
 from django.shortcuts import render
@@ -116,6 +117,9 @@ def get_frame_details(request):
                     "svg_data": svg_data,
                     "status": "success",
                     "message": "Model successfully read. Here is the generated image",
+                    "filtered_members": filtered_members,
+                    "node_coordinates": node_coordinates,
+                    "member_properties_multiplied": member_properties_multiplied,
                 },
             )
 
@@ -335,88 +339,125 @@ def write_member_dimensions_to_file(member_properties, output_file_path):
 
 
 def draw_frame(members_and_nodes, node_coordinates, member_dimension):
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=(16.5, 11.7))
+
+    x_values = []
+    y_values = []
+    text_list = []
 
     for member in members_and_nodes:
         member_no, bottom_joint, top_joint = member
         x1, y1, z1 = node_coordinates[bottom_joint]
         x2, y2, z2 = node_coordinates[top_joint]
 
-        # Calculate the length of the member
         length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
 
-        x_values = [x1, x2]
-        y_values = [y1, y2]
-        # ax.plot(x_values, y_values, "o-", label=f"Member {member_no}")
-        ax.plot(x_values, y_values, "o-", color="#a9a9a9", label=f"Member {member_no}")
+        x_values.extend([x1, x2])
+        y_values.extend([y1, y2])
+        ax.plot([x1, x2], [y1, y2], "o-", color="#a9a9a9")
 
         dimensions = member_dimension.get(int(member_no))
         if dimensions:
             dimension_label = format_dimension_label(dimensions)
-            mid_x = (x_values[0] + x_values[1]) / 2
-            mid_y = (y_values[0] + y_values[1]) / 2
+            mid_x = (x1 + x2) / 2
+            mid_y = (y1 + y2) / 2
 
-            ax.text(
-                mid_x,
-                mid_y - 0.3,
-                dimension_label,
-                fontsize=8,
-                color="yellow",
-                ha="center",
-                va="center",
-                bbox=dict(
-                    facecolor="black",
-                    alpha=0.8,
-                    edgecolor="none",
-                    boxstyle="round,pad=0.1",
-                ),
-            )
+            text_list.append((mid_x, mid_y, dimension_label))
 
-            # Display the length above the member name
-            ax.text(
-                mid_x,
-                mid_y + 0.1,
-                f"{length:.3f}",
-                fontsize=8,
-                color="red",
-                ha="center",
-                va="center",
-            )
-
-            # Calculate and display values at bottom end
             if isinstance(dimensions, tuple):
                 bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
-
-            ax.text(
-                x_values[0],
-                y_values[0] + 0.14,
-                f"{bottom_end_value}",
-                fontsize=8,
-                color="blue",
-                ha="center",
-                va="center",
-            )
-
-            # Calculate and display values at top end
-            if isinstance(dimensions, tuple):
                 top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
-            ax.text(
-                x_values[1],
-                y_values[1] - 0.14,
-                f"{top_end_value}",
-                fontsize=8,
-                color="blue",
-                ha="center",
-                va="center",
-            )
+
+            text_list.append((x1, y1, f"{bottom_end_value}"))
+            text_list.append((x2, y2, f"{top_end_value}"))
+
+        # Add member number text annotation
+        ax.text((x1 + x2) / 2, (y1 + y2) / 2, member_no, fontsize=5, color="red", ha="center", va="center")
+
+    ta.allocate(
+        ax,
+        [t[0] for t in text_list],
+        [t[1] for t in text_list],
+        [t[2] for t in text_list],
+        textsize=5,
+        textcolor="#f5f10f",
+        linecolor="k",
+        linewidth=0.4,
+        bbox=dict(
+            facecolor="black", alpha=0.6, edgecolor="none", boxstyle="round,pad=0.05"
+        ),
+    )
 
     ax.set_xlabel("")
     ax.set_ylabel("")
     ax.set_title("Sections properties")
     ax.grid(False)
     ax.legend().set_visible(False)
-
     ax.set_xticks([])
     ax.set_yticks([])
 
     return fig, ax
+
+
+# def draw_frame(members_and_nodes, node_coordinates, member_dimension):
+#     fig, ax = plt.subplots(figsize=(16.5, 11.7))
+#     # fig, ax = plt.subplots(figsize=(12, 10))
+
+#     x_values = []
+#     y_values = []
+#     text_list = []
+
+#     for member in members_and_nodes:
+#         member_no, bottom_joint, top_joint = member
+#         x1, y1, z1 = node_coordinates[bottom_joint]
+#         x2, y2, z2 = node_coordinates[top_joint]
+
+#         length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+
+#         x_values.extend([x1, x2])
+#         y_values.extend([y1, y2])
+#         ax.plot([x1, x2], [y1, y2], "o-", color="#a9a9a9", label=f"Member {member_no}")
+
+#         dimensions = member_dimension.get(int(member_no))
+#         if dimensions:
+#             dimension_label = format_dimension_label(dimensions)
+#             mid_x = (x1 + x2) / 2
+#             mid_y = (y1 + y2) / 2
+
+#             text_list.append((mid_x, mid_y, dimension_label))
+#             text_list.append((mid_x, mid_y + 0.1, f"{member_no}"))
+
+#             if isinstance(dimensions, tuple):
+#                 bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
+#                 top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
+
+#             text_list.append((x1, y1 + 0.14, f"{bottom_end_value}"))
+#             text_list.append((x2, y2 - 0.14, f"{top_end_value}"))
+
+#     for x, y, text in text_list:
+#         ax.text(x, y, text, fontsize=5, color="blue", ha="center", va="center")
+
+#     ta.allocate(
+#         ax,
+#         [t[0] for t in text_list],
+#         [t[1] for t in text_list],
+#         [t[2] for t in text_list],
+#         textsize=5,
+#         textcolor="#f5f10f",
+#         linecolor="k",
+#         linewidth=0.4,
+#         direction="northeast",
+#         bbox=dict(
+#             facecolor="black", alpha=0.6, edgecolor="none", boxstyle="round,pad=0.05"
+#         ),
+#     )
+
+#     ax.set_xlabel("")
+#     ax.set_ylabel("")
+#     ax.set_title("Sections properties")
+#     ax.grid(False)
+#     ax.legend().set_visible(False)
+#     ax.set_xticks([])
+#     ax.set_yticks([])
+
+#     return fig, ax
