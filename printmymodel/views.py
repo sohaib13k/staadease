@@ -344,7 +344,6 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     x_values = []
     y_values = []
     dimension_labels = []
-    end_values_labels = []
 
     for member in members_and_nodes:
         member_no, bottom_joint, top_joint = member
@@ -363,17 +362,14 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
             mid_x = (x1 + x2) / 2
             mid_y = (y1 + y2) / 2
 
-            dimension_labels.append((mid_x, mid_y, dimension_label))
+            dimension_labels.append((mid_x, mid_y, f"{dimension_label}\n{length:.3f}"))
 
             if isinstance(dimensions, tuple):
                 bottom_end_value = dimensions[0] - dimensions[4] - dimensions[6]
                 top_end_value = dimensions[2] - dimensions[4] - dimensions[6]
 
-                end_values_labels.append((x1, y1, f"↓{bottom_end_value}"))
-                end_values_labels.append((x2, y2, f"↑{top_end_value}"))
-
-        # Add member number text annotation
-        ax.text((x1 + x2) / 2, (y1 + y2) / 2, f"{length:.3f}", fontsize=5, color="red", ha="center", va="center")
+                ax.text(x1, y1 + 0.14, f"↓{bottom_end_value}", fontsize=5, color="blue", ha="center", va="center")
+                ax.text(x2, y2 - 0.14, f"↑{top_end_value}", fontsize=5, color="blue", ha="center", va="center")
 
     # Allocate dimension labels
     ta.allocate(
@@ -391,18 +387,6 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
         ),
     )
 
-    # Allocate end values labels
-    ta.allocate(
-        ax,
-        [t[0] for t in end_values_labels],
-        [t[1] for t in end_values_labels],
-        [t[2] for t in end_values_labels],
-        textsize=5,
-        textcolor="black",
-        linecolor="r",
-        linewidth=0.4
-    )
-
     ax.set_xlabel("")
     ax.set_ylabel("")
     ax.set_title("Sections properties")
@@ -412,7 +396,6 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
     ax.set_yticks([])
 
     return fig, ax
-
 
 # def draw_frame(members_and_nodes, node_coordinates, member_dimension):
 #     fig, ax = plt.subplots(figsize=(16.5, 11.7))
