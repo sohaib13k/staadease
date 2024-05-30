@@ -384,7 +384,7 @@ def draw_frame(members_and_nodes, node_coordinates, member_dimension):
         linewidth=0.4,
         # direction="northeast",
         bbox=dict(
-            facecolor="black", alpha=0.8, edgecolor="none", boxstyle="round,pad=0.1"
+            facecolor="black", alpha=0.7, edgecolor="none", boxstyle="round,pad=0.1"
         ),
     )
 
